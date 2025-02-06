@@ -427,21 +427,38 @@ def plot_roc_curve(y_true, y_probs, positive_label):
             - "tpr": Array of True Positive Rates for each threshold.
 
     """
-    from sklearn.metrics import roc_curve
-    # Map string labels to 0 or 1
     y_true_mapped = np.array([1 if label == positive_label else 0 for label in y_true])
+    y_probs = np.array(y_probs)
+    np.append(y_probs,0)
+    np.append(y_probs,1)
+    # Get unique thresholds (sorted in descending order)
+    thresholds = np.linspace(0, 1, 11)
 
-    # Compute ROC curve
-    fpr, tpr, _ = roc_curve(y_true_mapped, y_probs, drop_intermediate=False)
+    tpr = []
+    fpr = []
 
-    # Plot ROC curve
-    plt.figure(figsize=(8, 6))
-    plt.plot(fpr, tpr, marker='.', label='ROC curve')
-    plt.plot([0, 1], [0, 1], linestyle='--', label='Random classifier')
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.title('Receiver Operating Characteristic (ROC) Curve')
+    # Compute TPR and FPR for each threshold
+    for threshold in thresholds:
+        y_pred = (y_probs >= threshold).astype(int)  # Convert probabilities to binary predictions
+
+        tp = np.sum((y_pred == 1) & (y_true_mapped == 1))  # True Positives
+        fn = np.sum((y_pred == 0) & (y_true_mapped == 1))  # False Negatives
+        fp = np.sum((y_pred == 1) & (y_true_mapped == 0))  # False Positives
+        tn = np.sum((y_pred == 0) & (y_true_mapped == 0))  # True Negatives
+
+        tpr.append(tp / (tp + fn) if (tp + fn) > 0 else 0)  # TPR = TP / (TP + FN)
+        fpr.append(fp / (fp + tn) if (fp + tn) > 0 else 0)  # FPR = FP / (FP + TN)
+
+
+    # Plot ROC Curve
+    plt.figure(figsize=(7, 5))
+    plt.plot(fpr, tpr, marker="o", linestyle="-", label="ROC Curve", color="blue")  # FIXED
+    plt.plot([0, 1], [0, 1], "--", color="gray", label="Random Classifier (Baseline)")
+    
+    plt.xlabel("False Positive Rate (FPR)")
+    plt.ylabel("True Positive Rate (TPR)")
+    plt.title("Receiver Operating Characteristic (ROC) Curve")
     plt.legend()
+    plt.grid(True)
     plt.show()
-
     return {"fpr": np.array(fpr), "tpr": np.array(tpr)}
